@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LangGraph 编排可视化讲解</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #dbe2ef;
+      --panel: #ffffff;
+      --indigo: #6366f1;
+      --teal: #0d9488;
+      --amber: #d97706;
+      --rose: #e11d48;
+      --green: #059669;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+
+    .shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 28px 22px 44px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 25px;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      margin: 0;
+      color: var(--muted);
+      max-width: 660px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .icon-btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: #334155;
+      min-width: 92px;
+      padding: 8px 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      font: 600 13px system-ui, -apple-system, sans-serif;
+      letter-spacing: 0;
+    }
+
+    .icon-btn:hover { border-color: #b6c2d4; }
+
+    .board {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .diagram-scroll {
+      overflow-x: auto;
+      background: linear-gradient(180deg, #fbfcff, #f7f9fd);
+    }
+
+    .diagram {
+      display: block;
+      min-width: 920px;
+      width: 100%;
+      height: auto;
+    }
+
+    .panel-head {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-head strong { font-size: 14px; }
+    .step-badge {
+      font: 600 12px system-ui, -apple-system, sans-serif;
+      color: #4338ca;
+      background: #eef2ff;
+      border-radius: 6px;
+      padding: 4px 9px;
+      white-space: nowrap;
+    }
+
+    .state-body {
+      padding: 14px 16px 16px;
+    }
+
+    .state-title {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 13px 14px;
+      background: #0f172a;
+      color: #dbeafe;
+      border-radius: 8px;
+      overflow: auto;
+      font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .note {
+      margin: 10px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .detail {
+      grid-column: 1 / -1;
+    }
+
+    .detail-body {
+      padding: 16px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .detail-cell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      min-width: 0;
+    }
+
+    .detail-cell dt {
+      font: 600 11px system-ui, -apple-system, sans-serif;
+      color: var(--muted);
+      margin: 0 0 4px;
+    }
+
+    .detail-cell dd {
+      margin: 0;
+      font-size: 13px;
+      word-break: break-word;
+    }
+
+    .detail-cell dd a { color: #4338ca; }
+
+    .concepts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .concept {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 15px 16px;
+    }
+
+    .concept h2 {
+      margin: 0 0 7px;
+      font-size: 14px;
+    }
+
+    .concept p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .concept code {
+      color: #4338ca;
+      font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .legend {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .legend i { width: 18px; height: 4px; border-radius: 2px; display: inline-block; }
+
+    .node-shape { cursor: pointer; }
+    .node-shape rect { transition: stroke-width .16s ease, filter .16s ease; }
+    .node-shape:hover rect, .node-shape.active rect {
+      stroke-width: 3;
+      filter: drop-shadow(0 4px 8px rgba(30, 41, 59, .18));
+    }
+
+    .edge {
+      stroke: #94a3b8;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .edge-rev {
+      stroke: #f43f5e;
+      stroke-width: 2;
+      stroke-dasharray: 7 5;
+      fill: none;
+    }
+
+    .edge-ok {
+      stroke: #10b981;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .edge-label {
+      font: 600 12px system-ui, -apple-system, sans-serif;
+      fill: #475569;
+    }
+
+    .edge.animated {
+      stroke-dasharray: 6 7;
+      animation: dashmove .7s linear infinite;
+    }
+
+    .edge-rev.animated, .edge-ok.animated {
+      stroke-dasharray: 6 7;
+      animation: dashmove .7s linear infinite;
+    }
+
+    @keyframes dashmove {
+      to { stroke-dashoffset: -26; }
+    }
+
+    .pulse {
+      opacity: 0;
+      animation: none;
+      transform-origin: center;
+      transform-box: fill-box;
+    }
+
+    .node-shape.active .pulse {
+      opacity: 1;
+      animation: pulse 1.6s ease-out infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: .35; transform: scale(.72); }
+      70% { opacity: 0; transform: scale(1.18); }
+      100% { opacity: 0; transform: scale(1.18); }
+    }
+
+    @media (max-width: 900px) {
+      .board { grid-template-columns: 1fr; }
+      .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .concepts { grid-template-columns: 1fr; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>LangGraph 编排可视化讲解</h1>
+        <p class="lede">把一次任务从“目标”变成“报告”的过程拆开看：谁先做、谁并发做、谁把关、何时返工。</p>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="icon-btn" id="playBtn">暂停</button>
+      </div>
+    </header>
+
+    <div class="board">
+      <section class="panel">
+        <div class="panel-head">
+          <strong>节点与数据流向</strong>
+          <span class="step-badge" id="stepBadge">步骤 1 / 8</span>
+        </div>
+        <div class="diagram-scroll">
+          <svg class="diagram" id="diagram" viewBox="0 0 1160 620" role="img" aria-label="LangGraph 编排流程图">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+              </marker>
+              <marker id="arrow-rev" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#e11d48"/>
+              </marker>
+              <marker id="arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#059669"/>
+              </marker>
+            </defs>
+
+            <rect width="1160" height="620" fill="#f6f7fb"/>
+
+            <g>
+              <path id="edge-1" class="edge" d="M 170 301 L 229 301" marker-end="url(#arrow)"/>
+              <path id="edge-2" class="edge" d="M 385 301 L 443 301" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="414" y="286" text-anchor="middle">Send 并发分发</text>
+              <path id="edge-3" class="edge" d="M 680 301 L 759 301" marker-end="url(#arrow)"/>
+              <text class="edge-label" x="719" y="286" text-anchor="middle">按索引排序合并</text>
+              <path id="edge-4" class="edge" d="M 915 301 L 979 301" marker-end="url(#arrow)"/>
+              <path id="edge-ok" class="edge-ok" d="M 1060 342 L 1060 459" marker-end="url(#arrow-ok)"/>
+              <text class="edge-label" x="1072" y="404" fill="#047857">通过或达到上限</text>
+              <path id="edge-rev" class="edge-rev" d="M 1060 342 C 1060 435 840 435 840 348" marker-end="url(#arrow-rev)"/>
+              <text class="edge-label" x="950" y="431" fill="#be123c">未通过，返回修订</text>
+            </g>
+
+            <g class="node-shape" data-node="start">
+              <rect x="20" y="260" width="150" height="82" rx="10" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.5"/>
+              <circle cx="95" cy="301" r="26" fill="none" stroke="#6366f1" stroke-width="2" class="pulse" opacity="0"/>
+              <text class="node-title" x="95" y="296" text-anchor="middle" fill="#4338ca" font-size="17" font-weight="600">用户任务</text>
+              <text class="node-sub" x="95" y="323" text-anchor="middle" fill="#64748b" font-size="13">目标字符串</text>
+            </g>
+
+            <g class="node-shape" data-node="planner">
+              <rect x="235" y="260" width="150" height="82" rx="10" fill="#eef2ff" stroke="#a5b4fc" stroke-width="1.5"/>
+              <circle cx="310" cy="301" r="26" fill="none" stroke="#6366f1" stroke-width="2" class="pulse" opacity="0"/>
+              <text class="node-title" x="310" y="296" text-anchor="middle" fill="#4338ca" font-size="17" font-weight="600">规划</text>
+              <text class="node-sub" x="310" y="323" text-anchor="middle" fill="#64748b" font-size="13">拆成 1–5 个子任务</text>
+            </g>
+
+            <g class="node-shape" data-node="workers">
+              <rect x="450" y="190" width="230" height="222" rx="10" fill="#f0fdfa" stroke="#5eead4" stroke-width="1.5"/>
+              <circle cx="565" cy="301" r="76" fill="none" stroke="#0d9488" stroke-width="2" class="pulse" opacity="0"/>
+              <text class="node-title" x="565" y="218" text-anchor="middle" fill="#0f766e" font-size="17" font-weight="600">并行执行</text>
+              <text class="node-sub" x="565" y="239" text-anchor="middle" fill="#64748b" font-size="13">同一节点，并发运行</text>
+              <g>
+                <rect x="475" y="255" width="180" height="44" rx="8" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2"/>
+                <text class="chip-title" x="565" y="280" text-anchor="middle" fill="#0f766e" font-size="13" font-weight="600">子任务 1 · 需求分析</text>
+              </g>
+              <g>
+                <rect x="475" y="311" width="180" height="44" rx="8" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2"/>
+                <text class="chip-title" x="565" y="336" text-anchor="middle" fill="#0f766e" font-size="13" font-weight="600">子任务 2 · 实施方案</text>
+              </g>
+              <g>
+                <rect x="475" y="367" width="180" height="44" rx="8" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2"/>
+                <text class="chip-title" x="565" y="392" text-anchor="middle" fill="#0f766e" font-size="13" font-weight="600">子任务 3 · 验证方案</text>
+              </g>
+            </g>
+
+            <g class="node-shape" data-node="writer">
+              <rect x="765" y="260" width="150" height="82" rx="10" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+              <circle cx="840" cy="301" r="26" fill="none" stroke="#d97706" stroke-width="2" class="pulse" opacity="0"/>
+              <text class="node-title" x="840" y="296" text-anchor="middle" fill="#c2410c" font-size="17" font-weight="600">汇总</text>
+              <text class="node-sub" x="840" y="323" text-anchor="middle" fill="#64748b" font-size="13">合并为 Markdown</text>
+            </g>
+
+            <g class="node-shape" data-node="reviewer">
+              <rect x="985" y="260" width="150" height="82" rx="10" fill="#fff1f2" stroke="#fda4af" stroke-width="1.5"/>
+              <circle cx="1060" cy="301" r="26" fill="none" stroke="#e11d48" stroke-width="2" class="pulse" opacity="0"/>
+              <text class="node-title" x="1060" y="296" text-anchor="middle" fill="#be123c" font-size="17" font-weight="600">审核</text>
+              <text class="node-sub" x="1060" y="323" text-anchor="middle" fill="#64748b" font-size="13">通过 / 修改意见</text>
+            </g>
+
+            <g class="node-shape" data-node="finish">
+              <rect x="985" y="465" width="150" height="82" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.5"/>
+              <circle cx="1060" cy="506" r="26" fill="none" stroke="#059669" stroke-width="2" class="pulse" opacity="0"/>
+              <text class="node-title" x="1060" y="501" text-anchor="middle" fill="#047857" font-size="17" font-weight="600">交付</text>
+              <text class="node-sub" x="1060" y="528" text-anchor="middle" fill="#64748b" font-size="13">输出报告与状态</text>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-head">
+          <strong>共享状态</strong>
+          <span class="step-badge" id="stateKind">WorkflowState</span>
+        </div>
+        <div class="state-body">
+          <h2 class="state-title" id="stateTitle">初始状态</h2>
+          <pre id="stateJson"></pre>
+          <p class="note" id="stateNote">点击左侧节点可查看角色职责；自动演示会逐步展示状态变化。</p>
+        </div>
+      </aside>
+
+      <section class="panel detail">
+        <div class="panel-head">
+          <strong>节点详情</strong>
+          <span class="step-badge" id="detailBadge">点击节点查看</span>
+        </div>
+        <div class="detail-body">
+          <dl class="detail-grid" id="detailGrid"></dl>
+        </div>
+      </section>
+    </div>
+
+    <section class="concepts" aria-label="关键机制">
+      <article class="concept">
+        <h2>Send 并发分发</h2>
+        <p>规划后由 <code>dispatch()</code> 为每个子任务构造一份 <code>Send("worker", …)</code>。同一个 worker 节点在状态流中并行运行，互不等待。</p>
+      </article>
+      <article class="concept">
+        <h2>Reducer 状态合并</h2>
+        <p><code>results</code> 用 <code>Annotated[list, operator.add]</code> 声明，并发结果相加而不是互相覆盖，再按任务索引排序。</p>
+      </article>
+      <article class="concept">
+        <h2>有界审核修订</h2>
+        <p>审核不通过时只回到汇总节点，不重跑全部子任务；<code>revisions</code> 到达上限后强制交付，避免无限循环。</p>
+      </article>
+    </section>
+
+    <div class="legend" aria-label="图例">
+      <span><i style="background:#94a3b8"></i>主链路</span>
+      <span><i style="background:#e11d48"></i>审核不通过，返回修订</span>
+      <span><i style="background:#059669"></i>通过或达到修订上限</span>
+    </div>
+  </main>
+
+  <script>
+    const NODES = {
+      start: {
+        title: "用户任务",
+        badge: "start / 输入",
+        cells: [
+          ["输入", "一条中文任务目标，例如“设计一个企业知识库问答助手”"],
+          ["输出", "作为共享状态的 goal 字段，开始流转"],
+          ["代码", "cli.py · initial_state()"],
+          ["要点", "目标不能为空；max_revisions 限制在 0–5"]
+        ]
+      },
+      planner: {
+        title: "规划",
+        badge: "planner",
+        cells: [
+          ["输入", "用户目标 goal"],
+          ["输出", "Plan：1–5 个带标题和指令的子任务"],
+          ["代码", "graph.py · planner()"],
+          ["要点", "结构化输出，由 Pydantic 校验"]
+        ]
+      },
+      workers: {
+        title: "并行执行",
+        badge: "worker × N",
+        cells: [
+          ["输入", "goal + 单个 task + index（WorkerState）"],
+          ["输出", "WorkerResult：索引、标题、内容"],
+          ["代码", "graph.py · worker()"],
+          ["要点", "Send 并发分发；空结果会终止流程"]
+        ]
+      },
+      writer: {
+        title: "汇总",
+        badge: "writer",
+        cells: [
+          ["输入", "按索引排序的全部结果、旧稿、审核意见"],
+          ["输出", "可直接交付的 Markdown 报告"],
+          ["代码", "graph.py · writer()"],
+          ["要点", "修订时只重跑本节点，子任务不重跑"]
+        ]
+      },
+      reviewer: {
+        title: "审核",
+        badge: "reviewer",
+        cells: [
+          ["输入", "goal + 当前 draft"],
+          ["输出", "Review：approved 与具体 feedback"],
+          ["代码", "graph.py · reviewer()"],
+          ["要点", "不通过时给出可执行的修改意见"]
+        ]
+      },
+      finish: {
+        title: "交付",
+        badge: "finish / 输出",
+        cells: [
+          ["输入", "审核结论与修订次数"],
+          ["输出", "status：approved 或 revision_limit"],
+          ["代码", "graph.py · finish()"],
+          ["要点", "退出码 0 表示通过，2 表示达上限"]
+        ]
+      }
+    };
+
+    const STEPS = [
+      {
+        node: "start",
+        title: "初始状态",
+        note: "CLI 读取目标后创建 WorkflowState。此时还没有任务、结果或报告。",
+        state: { goal: "设计一个企业知识库问答助手", results: [], draft: "", revisions: 0, max_revisions: 2 }
+      },
+      {
+        node: "planner",
+        title: "规划：拆分子任务",
+        note: "planner 把目标拆成 3 个可并行执行的子任务，写入 tasks。",
+        state: {
+          goal: "设计一个企业知识库问答助手",
+          tasks: [
+            { title: "需求分析", instruction: "明确目标、输入输出和交付范围" },
+            { title: "实施方案", instruction: "给出实现步骤和模块职责" },
+            { title: "验证方案", instruction: "列出正常路径、异常路径和验收方式" }
+          ],
+          results: [],
+          draft: "",
+          revisions: 0,
+          max_revisions: 2
+        }
+      },
+      {
+        node: "workers",
+        title: "并行执行：3 个 worker",
+        note: "dispatch() 为每个子任务生成 Send，同一 worker 节点并发运行；结果通过 reducer 合并。",
+        state: {
+          goal: "设计一个企业知识库问答助手",
+          tasks: ["需求分析", "实施方案", "验证方案"],
+          results: [
+            { index: 0, title: "需求分析", content: "围绕目标给出输入输出和交付范围…" },
+            { index: 1, title: "实施方案", content: "给出实现步骤和模块职责…" },
+            { index: 2, title: "验证方案", content: "列出正常、异常路径和验收方式…" }
+          ],
+          draft: "",
+          revisions: 0,
+          max_revisions: 2
+        }
+      },
+      {
+        node: "writer",
+        title: "汇总：生成初稿",
+        note: "writer 把结果按索引排序后合并为 Markdown。示例初稿还没有验收标准。",
+        state: {
+          goal: "设计一个企业知识库问答助手",
+          results: ["需求分析", "实施方案", "验证方案"],
+          draft: "# 设计一个企业知识库问答助手\n\n## 需求分析…\n\n## 实施方案…\n\n## 验证方案…",
+          revisions: 0,
+          max_revisions: 2
+        }
+      },
+      {
+        node: "reviewer",
+        title: "审核：要求补充验收标准",
+        note: "reviewer 检查完整性与可用性，发现缺少验收标准，返回未通过。",
+        state: {
+          goal: "设计一个企业知识库问答助手",
+          draft: "# 设计一个企业知识库问答助手…",
+          review: { approved: false, feedback: "请补充独立的验收标准章节。" },
+          revisions: 0,
+          max_revisions: 2
+        }
+      },
+      {
+        node: "writer",
+        title: "修订：只重跑汇总",
+        note: "条件边把状态送回 writer，子任务不重跑。writer 根据 feedback 补充验收标准，revisions 变为 1。",
+        state: {
+          goal: "设计一个企业知识库问答助手",
+          results: ["需求分析", "实施方案", "验证方案"],
+          draft: "# 设计一个企业知识库问答助手\n\n…\n\n## 验收标准\n\n- 全部子任务产出已合并",
+          revisions: 1,
+          max_revisions: 2
+        }
+      },
+      {
+        node: "reviewer",
+        title: "复审：通过",
+        note: "报告已包含验收标准，reviewer 返回 approved。真实模型模式可能 0 次或多次修订。",
+        state: {
+          goal: "设计一个企业知识库问答助手",
+          draft: "# 设计一个企业知识库问答助手\n\n…\n\n## 验收标准…",
+          review: { approved: true, feedback: "已包含验收标准。" },
+          revisions: 1,
+          max_revisions: 2
+        }
+      },
+      {
+        node: "finish",
+        title: "交付：输出报告与状态",
+        note: "finish 写入 status。CLI 输出报告、修订次数和审核意见；通过时退出码为 0。",
+        state: {
+          goal: "设计一个企业知识库问答助手",
+          draft: "# 设计一个企业知识库问答助手\n\n…\n\n## 验收标准…",
+          review: { approved: true, feedback: "已包含验收标准。" },
+          revisions: 1,
+          max_revisions: 2,
+          status: "approved"
+        }
+      }
+    ];
+
+    const diagram = document.getElementById("diagram");
+    const playBtn = document.getElementById("playBtn");
+    const stepBadge = document.getElementById("stepBadge");
+    const stateKind = document.getElementById("stateKind");
+    const stateTitle = document.getElementById("stateTitle");
+    const stateJson = document.getElementById("stateJson");
+    const stateNote = document.getElementById("stateNote");
+    const detailGrid = document.getElementById("detailGrid");
+    const detailBadge = document.getElementById("detailBadge");
+
+    let index = 0;
+    let timer = null;
+
+    const edges = {
+      start: ["edge-1"],
+      planner: ["edge-2"],
+      workers: ["edge-3"],
+      writer: ["edge-4"],
+      reviewer: ["edge-ok", "edge-rev"],
+      finish: []
+    };
+
+    function renderDetail(step) {
+      const meta = NODES[step.node];
+      detailBadge.textContent = meta.badge;
+      detailGrid.innerHTML = meta.cells.map(([key, value]) =>
+        `<div class="detail-cell"><dt>${key}</dt><dd>${value}</dd></div>`
+      ).join("");
+    }
+
+    function renderState(step) {
+      stateKind.textContent = "WorkflowState";
+      stateTitle.textContent = step.title;
+      stateJson.textContent = JSON.stringify(step.state, null, 2);
+      stateNote.textContent = step.note;
+    }
+
+    function activate(step) {
+      diagram.querySelectorAll(".node-shape").forEach((el) => el.classList.remove("active"));
+      diagram.querySelectorAll(".pulse").forEach((el) => { el.setAttribute("opacity", "0"); });
+      diagram.querySelectorAll(".edge, .edge-rev").forEach((el) => el.classList.remove("animated"));
+
+      const node = diagram.querySelector(`[data-node="${step.node}"]`);
+      if (node) {
+        node.classList.add("active");
+        const ring = node.querySelector(".pulse");
+        if (ring) ring.setAttribute("opacity", "1");
+      }
+      edges[step.node].forEach((id) => {
+        const edge = document.getElementById(id);
+        if (edge) edge.classList.add("animated");
+      });
+      stepBadge.textContent = `步骤 ${index + 1} / ${STEPS.length}`;
+      renderDetail(step);
+      renderState(step);
+    }
+
+    function start() {
+      stopTimer();
+      timer = window.setInterval(() => {
+        index = (index + 1) % STEPS.length;
+        activate(STEPS[index]);
+        if (index === STEPS.length - 1) stop();
+      }, 2200);
+      playBtn.textContent = "暂停";
+    }
+
+    function stop() {
+      stopTimer();
+      playBtn.textContent = index === STEPS.length - 1 ? "重新播放" : "继续";
+    }
+
+    function stopTimer() {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    playBtn.addEventListener("click", () => {
+      if (timer) {
+        stop();
+      } else if (index === STEPS.length - 1) {
+        index = 0;
+        activate(STEPS[index]);
+        start();
+      } else {
+        start();
+      }
+    });
+
+    diagram.addEventListener("click", (event) => {
+      const shape = event.target.closest(".node-shape");
+      if (!shape) return;
+      stop();
+      index = STEPS.findIndex((step) => step.node === shape.dataset.node);
+      activate(STEPS[index]);
+    });
+
+    activate(STEPS[0]);
+    start();
+  </script>
+</body>
+</html>
