@@ -77,6 +77,46 @@ DEEPSEEK_TIMEOUT=120
 
 真实模型调用会产生服务商费用。当前执行节点只做文本推理，不具备联网搜索、读写文件或执行代码的工具。项目未开启 LangSmith tracing。
 
+## Web 服务
+
+项目提供 FastAPI 可视化服务：在浏览器里输入任务目标，后台执行编排，完成后直接下载 Markdown 报告。
+
+```bash
+./start-web.sh
+```
+
+默认地址为 `http://127.0.0.1:8000`。需要换端口时：
+
+```bash
+PORT=8001 ./start-web.sh
+```
+
+主要接口：
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| `GET` | `/` | 提问与下载页面 |
+| `POST` | `/api/run` | 创建一次后台任务 |
+| `GET` | `/api/task/{task_id}` | 查询进度和结果 |
+| `GET` | `/api/task/{task_id}/download` | 下载最终 Markdown 报告 |
+
+## Docker 容器化
+
+项目提供 `Dockerfile`，构建后可直接运行 Web 服务。密钥通过 `--env-file` 注入，不会写进镜像：
+
+```bash
+docker build -t agentic .
+docker run --rm -p 8000:8000 --env-file .env agentic
+```
+
+也可以只传入密钥：
+
+```bash
+docker run --rm -p 8000:8000 -e DEEPSEEK_API_KEY=你的密钥 agentic
+```
+
+打开 `http://127.0.0.1:8000` 即可使用。`.dockerignore` 已排除 `.venv`、`.env`、`output` 和测试文件。
+
 ## 编排流程
 
 ![LangGraph 智能体编排流程图](docs/编排流程图.svg)

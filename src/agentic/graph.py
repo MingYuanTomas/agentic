@@ -24,7 +24,8 @@ def initial_state(goal: str, max_revisions: int = 2) -> WorkflowState:
         "max_revisions": max_revisions,
     }
 
-#传入变量类型Backend
+
+# 传入变量类型Backend
 def build_graph(backend: Backend):
     """组装 LangGraph：每个内部函数是一个节点，条件边负责并发分发和审核路由。"""
 

@@ -1,0 +1,20 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# 先安装锁定的依赖，再复制源码，利用 Docker 层缓存。
+COPY requirements.lock ./
+RUN python -m pip install --upgrade pip \
+    && python -m pip install -r requirements.lock -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN python -m pip install --no-deps .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "agentic.web:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,4 +1,4 @@
-.PHONY: install run test lint graph
+.PHONY: install run web test lint graph
 
 GOAL ?= 设计一个企业知识库问答助手
 
@@ -7,6 +7,9 @@ install:
 
 run:
 	./start.sh run "$(GOAL)"
+
+web:
+	./start-web.sh
 
 test:
 	.venv/bin/python -m pytest -q

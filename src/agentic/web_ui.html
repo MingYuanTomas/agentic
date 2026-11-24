@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic 编排服务</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #dbe2ef;
+      --panel: #ffffff;
+      --accent: #2563eb;
+      --accent-soft: #eef4ff;
+      --ok: #059669;
+      --warn: #d97706;
+      --error: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+
+    .shell {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 30px 20px 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 21px;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: #334155;
+      border-radius: 999px;
+      padding: 5px 11px;
+      font: 600 12px system-ui, -apple-system, sans-serif;
+    }
+
+    .chip::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ok);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font: 600 13px system-ui, -apple-system, sans-serif;
+      margin-bottom: 7px;
+    }
+
+    textarea,
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font: 14px system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      background: #fbfcff;
+      letter-spacing: 0;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 160px;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      font: 600 14px system-ui, -apple-system, sans-serif;
+      letter-spacing: 0;
+      text-decoration: none;
+      padding: 10px 16px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      width: 100%;
+    }
+
+    .btn-primary:disabled {
+      background: #93b4f5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--panel);
+      border-color: var(--line);
+      color: #334155;
+    }
+
+    .btn-download {
+      background: var(--accent-soft);
+      color: #1d4ed8;
+    }
+
+    .status-line {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .progress {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .progress.visible { display: block; }
+
+    .progress-list {
+      list-style: none;
+      margin: 10px 0 0;
+      padding: 0;
+      display: grid;
+      gap: 7px;
+    }
+
+    .progress-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .progress-list li::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex: none;
+    }
+
+    .result {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .result.visible { display: block; }
+
+    .result-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    pre {
+      margin: 0;
+      padding: 14px;
+      background: #0f172a;
+      color: #dbeafe;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 520px;
+      font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 10px 0 0;
+    }
+
+    .error {
+      margin-top: 16px;
+      display: none;
+      border: 1px solid #fecaca;
+      background: #fff1f2;
+      color: #9f1239;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+    }
+
+    .error.visible { display: block; }
+
+    @media (max-width: 640px) {
+      .row { grid-template-columns: 1fr; }
+      .btn-primary { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>Agentic 编排服务</h1>
+        <p class="lede">输入任务目标，由多个智能体协作生成 Markdown 报告。</p>
+      </div>
+      <span class="chip">DeepSeek</span>
+    </header>
+
+    <section class="panel">
+      <div class="field">
+        <label for="goal">任务目标</label>
+        <textarea id="goal" placeholder="例如：设计一个企业知识库问答助手，包含模块设计、实施步骤和验收标准"></textarea>
+      </div>
+      <div class="row">
+        <div class="field" style="margin-bottom: 0;">
+          <label for="maxRevisions">最大修订次数（0–5）</label>
+          <input id="maxRevisions" type="number" min="0" max="5" value="2">
+        </div>
+        <button type="button" class="btn btn-primary" id="submitBtn">开始生成</button>
+      </div>
+      <p class="status-line" id="statusLine">模型调用可能需要数分钟，完成后会在这里给出下载入口。</p>
+    </section>
+
+    <section class="progress panel" id="progressPanel">
+      <label>执行进度</label>
+      <ul class="progress-list" id="progressList"></ul>
+    </section>
+
+    <section class="result panel" id="resultPanel">
+      <div class="result-head">
+        <label style="margin-bottom: 0;">报告结果</label>
+        <div class="result-actions">
+          <a class="btn btn-download" id="downloadBtn" href="#" download>下载 Markdown</a>
+          <button type="button" class="btn btn-secondary" id="copyBtn">复制全文</button>
+          <button type="button" class="btn btn-secondary" id="resetBtn">新建任务</button>
+        </div>
+      </div>
+      <pre id="reportPreview"></pre>
+      <div class="meta" id="resultMeta"></div>
+    </section>
+
+    <section class="error" id="errorPanel"></section>
+  </main>
+
+  <script>
+    const goalInput = document.getElementById("goal");
+    const maxInput = document.getElementById("maxRevisions");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusLine = document.getElementById("statusLine");
+    const progressPanel = document.getElementById("progressPanel");
+    const progressList = document.getElementById("progressList");
+    const resultPanel = document.getElementById("resultPanel");
+    const reportPreview = document.getElementById("reportPreview");
+    const resultMeta = document.getElementById("resultMeta");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const errorPanel = document.getElementById("errorPanel");
+
+    let pollTimer = null;
+    let currentDraft = "";
+
+    function setBusy(busy) {
+      submitBtn.disabled = busy;
+      submitBtn.textContent = busy ? "正在生成…" : "开始生成";
+      goalInput.disabled = busy;
+      maxInput.disabled = busy;
+    }
+
+    function showError(message) {
+      errorPanel.textContent = message;
+      errorPanel.classList.add("visible");
+    }
+
+    function clearError() {
+      errorPanel.textContent = "";
+      errorPanel.classList.remove("visible");
+    }
+
+    function renderProgress(items) {
+      progressPanel.classList.add("visible");
+      progressList.innerHTML = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+    }
+
+    function renderResult(task) {
+      currentDraft = task.draft || "";
+      resultPanel.classList.add("visible");
+      reportPreview.textContent = currentDraft;
+      resultMeta.innerHTML = [
+        `最终状态：${task.result_status}`,
+        `修订次数：${task.revisions}`,
+        `审核意见：${escapeHtml(task.review || "无")}`,
+      ].join("　");
+      downloadBtn.href = `/api/task/${task.task_id}/download`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    async function poll(taskId) {
+      const response = await fetch(`/api/task/${taskId}`);
+      if (!response.ok) {
+        showError("读取任务状态失败，请重试。");
+        stopPolling();
+        setBusy(false);
+        return;
+      }
+      const task = await response.json();
+      renderProgress(task.progress || []);
+
+      if (task.status === "done") {
+        stopPolling();
+        setBusy(false);
+        statusLine.textContent = "任务完成，可下载报告。";
+        renderResult(task);
+      } else if (task.status === "error") {
+        stopPolling();
+        setBusy(false);
+        statusLine.textContent = "任务失败，请检查配置后重试。";
+        showError(task.error || "未知错误");
+      } else {
+        statusLine.textContent = `任务进行中，已完成 ${task.progress.length} 个节点。`;
+      }
+    }
+
+    function startPolling(taskId) {
+      stopPolling();
+      poll(taskId);
+      pollTimer = window.setInterval(() => poll(taskId), 1200);
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        window.clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    function resetView() {
+      stopPolling();
+      setBusy(false);
+      clearError();
+      progressPanel.classList.remove("visible");
+      progressList.innerHTML = "";
+      resultPanel.classList.remove("visible");
+      reportPreview.textContent = "";
+      resultMeta.innerHTML = "";
+      statusLine.textContent = "模型调用可能需要数分钟，完成后会在这里给出下载入口。";
+      goalInput.disabled = false;
+      maxInput.disabled = false;
+      goalInput.focus();
+    }
+
+    submitBtn.addEventListener("click", async () => {
+      const goal = goalInput.value.trim();
+      const maxRevisions = Number(maxInput.value);
+      if (!goal) {
+        showError("请先填写任务目标。");
+        return;
+      }
+      if (!Number.isInteger(maxRevisions) || maxRevisions < 0 || maxRevisions > 5) {
+        showError("最大修订次数必须是 0 到 5 的整数。");
+        return;
+      }
+      clearError();
+      progressPanel.classList.remove("visible");
+      resultPanel.classList.remove("visible");
+      setBusy(true);
+      statusLine.textContent = "正在创建任务…";
+      try {
+        const response = await fetch("/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ goal, max_revisions: maxRevisions }),
+        });
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.detail || "创建任务失败");
+        }
+        const data = await response.json();
+        startPolling(data.task_id);
+      } catch (error) {
+        setBusy(false);
+        showError(error.message || "请求失败，请检查服务是否运行。");
+      }
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      if (!currentDraft) return;
+      await navigator.clipboard.writeText(currentDraft);
+      copyBtn.textContent = "已复制";
+      window.setTimeout(() => { copyBtn.textContent = "复制全文"; }, 1500);
+    });
+
+    resetBtn.addEventListener("click", resetView);
+  </script>
+</body>
+</html>
