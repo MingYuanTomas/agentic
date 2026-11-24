@@ -51,6 +51,7 @@ class LLMBackend:
 
         # ChatOpenAI 兼容 DeepSeek 等 OpenAI 风格接口；use_responses_api=False
         # 强制走 Chat Completions 协议，确保 function calling 行为一致。
+        # self用于全局变量
         self.model = ChatOpenAI(
             api_key=api_key,
             model=model,
@@ -117,7 +118,7 @@ class LLMBackend:
         )
         return Review.model_validate(result)
 
-
+#继承LLMBackend
 class DeepSeekBackend(LLMBackend):
     """DeepSeek 官方 Chat Completions 接口，使用非思考模式支持指定工具输出。"""
 
